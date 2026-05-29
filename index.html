@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CANSAT-GCS | INDIA SPACE LAB</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- CDN Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- LAYER 0 — Starfield canvas (z-index: 0)                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <canvas id="starfield"></canvas>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- LAYER 1 — Nebula gradient blobs (z-index: 1)               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="nebula-container">
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+    <div class="nebula nebula-4"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- LAYER 2 — CRT scanline overlay (z-index: 2)                -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="scanline-overlay"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- LAYER 10 — Main dashboard (z-index: 10)                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="dashboard-grid">
+
+    <!-- ── ROW 1: HEADER ─────────────────────────────────────── -->
+    <header id="header" class="panel header-panel">
+
+      <div class="header-logo">
+        <div class="logo-emblem">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="14" stroke="#00d4ff" stroke-width="1.5" opacity="0.6"/>
+            <circle cx="18" cy="18" r="8"  stroke="#00d4ff" stroke-width="1.5"/>
+            <line x1="18" y1="4"  x2="18" y2="11" stroke="#00d4ff" stroke-width="1.5"/>
+            <line x1="18" y1="25" x2="18" y2="32" stroke="#00d4ff" stroke-width="1.5"/>
+            <line x1="4"  y1="18" x2="11" y2="18" stroke="#00d4ff" stroke-width="1.5"/>
+            <line x1="25" y1="18" x2="32" y2="18" stroke="#00d4ff" stroke-width="1.5"/>
+            <circle cx="18" cy="18" r="3" fill="#00d4ff"/>
+          </svg>
+        </div>
+        <div class="logo-text-group">
+          <span class="logo-main">CANSAT-GCS</span>
+          <span class="logo-pipe">|</span>
+          <span class="logo-org">INDIA SPACE LAB</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="met-block">
+          <div class="met-label">MISSION ELAPSED TIME</div>
+          <div id="met-display" class="met-value">T+00:00:00</div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="clock-block">
+          <div class="clock-label">UTC</div>
+          <div id="clock-display" class="clock-value">--:--:--</div>
+        </div>
+        <div class="status-block">
+          <span class="status-dot standby" id="status-dot"></span>
+          <span class="status-text" id="status-text">STANDBY</span>
+        </div>
+      </div>
+
+    </header>
+
+    <!-- ── ROW 2: CONTROL BAR ─────────────────────────────────── -->
+    <div id="control-bar" class="panel control-bar-panel">
+
+      <!-- Telemetry toggle pair -->
+      <button id="btn-start" class="cb-btn cb-btn-green">
+        <span class="cb-icon">▶</span>START TELEMETRY
+      </button>
+      <button id="btn-stop" class="cb-btn cb-btn-red" disabled>
+        <span class="cb-icon">■</span>STOP TELEMETRY
+      </button>
+
+      <div class="cb-sep"></div>
+
+      <!-- Data management -->
+      <button id="btn-export-csv" class="cb-btn cb-btn-cyan">
+        <span class="cb-icon">↓</span>EXPORT CSV
+      </button>
+      <button id="btn-export-graph" class="cb-btn cb-btn-cyan">
+        <span class="cb-icon">↓</span>EXPORT GRAPH
+      </button>
+      <button id="btn-reset" class="cb-btn cb-btn-cyan">
+        <span class="cb-icon">↺</span>RESET PACKET
+      </button>
+
+      <div class="cb-sep"></div>
+
+      <!-- WebSocket connection -->
+      <button id="btn-serial-connect" class="cb-btn cb-btn-cyan"
+              title="Connect to ws_bridge.py WebSocket server">
+        <span class="cb-icon">🔌</span>CONNECT WS
+      </button>
+      <span id="serial-status"
+            style="color:var(--text-secondary);font-family:'Share Tech Mono';font-size:11px;">
+        ○ WS OFFLINE
+      </span>
+
+      <div class="cb-sep"></div>
+
+      <!-- PC time sync — pushed to far right -->
+      <div class="cb-time-group">
+        <button id="btn-sync-time" class="cb-btn cb-btn-cyan">
+          <span class="cb-icon">⊛</span>SYNC PC TIME
+        </button>
+        <div class="cb-time-readout">
+          <div class="cb-time-label">LOCAL</div>
+          <div id="sync-time-display" class="cb-time-value">--:--:--</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── ROW 3 LEFT: TELEMETRY DISPLAY ─────────────────────── -->
+    <div id="telemetry-panel" class="panel content-panel">
+      <div class="panel-header">
+        <span class="panel-header-accent"></span>
+        <span class="panel-title">TELEMETRY DATA</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- CONTAINER TELEMETRY -->
+        <div class="tele-section">
+          <div class="tele-section-label">Container Telemetry</div>
+          <div class="tele-grid">
+
+            <div class="tele-card">
+              <div class="tele-card-label">Altitude</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-altitude">---</span>
+                <span class="tele-card-unit">m</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">Pressure</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-pressure">---</span>
+                <span class="tele-card-unit">hPa</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">Temperature</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-temperature">---</span>
+                <span class="tele-card-unit">°C</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">Battery</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-battery">---</span>
+                <span class="tele-card-unit">V</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">Pkt Count</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-pkt-count">----</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">Timestamp</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value tele-card-value--sm" id="tele-timestamp">--:--:--</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- PAYLOAD TELEMETRY -->
+        <div class="tele-section">
+          <div class="tele-section-label">Payload Telemetry</div>
+          <div class="tele-grid">
+
+            <div class="tele-card">
+              <div class="tele-card-label">Descent Rate</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-descent-rate">---</span>
+                <span class="tele-card-unit">m/s</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">GPS Alt</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-gps-alt">---</span>
+                <span class="tele-card-unit">m</span>
+              </div>
+            </div>
+
+            <div class="tele-card tele-card-full">
+              <div class="tele-card-label">GPS Latitude</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-gps-lat">---</span>
+                <span class="tele-card-unit">°</span>
+              </div>
+            </div>
+
+            <div class="tele-card tele-card-full">
+              <div class="tele-card-label">GPS Longitude</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-gps-lon">---</span>
+                <span class="tele-card-unit">°</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">Roll</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-roll">---</span>
+                <span class="tele-card-unit">°</span>
+              </div>
+            </div>
+
+            <div class="tele-card">
+              <div class="tele-card-label">Pitch</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-pitch">---</span>
+                <span class="tele-card-unit">°</span>
+              </div>
+            </div>
+
+            <div class="tele-card tele-card-full">
+              <div class="tele-card-label">Yaw</div>
+              <div class="tele-card-value-wrap">
+                <span class="tele-card-value" id="tele-yaw">---</span>
+                <span class="tele-card-unit">°</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
+    </div>
+
+    <!-- ── ROW 3 CENTER: REAL-TIME GRAPHS ─────────────────────── -->
+    <div id="graphs-panel" class="panel content-panel">
+      <div class="panel-header">
+        <span class="panel-header-accent"></span>
+        <span class="panel-title">REAL-TIME TELEMETRY GRAPHS</span>
+      </div>
+      <div class="panel-body">
+        <div class="graph-grid">
+
+          <!-- Row 1 -->
+          <div class="graph-cell">
+            <div class="graph-title">Altitude</div>
+            <div class="graph-canvas-wrap">
+              <canvas id="chart-altitude"></canvas>
+            </div>
+          </div>
+          <div class="graph-cell">
+            <div class="graph-title">Pressure</div>
+            <div class="graph-canvas-wrap">
+              <canvas id="chart-pressure"></canvas>
+            </div>
+          </div>
+
+          <!-- Row 2 -->
+          <div class="graph-cell">
+            <div class="graph-title">Temperature</div>
+            <div class="graph-canvas-wrap">
+              <canvas id="chart-temperature"></canvas>
+            </div>
+          </div>
+          <div class="graph-cell">
+            <div class="graph-title">Descent Rate</div>
+            <div class="graph-canvas-wrap">
+              <canvas id="chart-descent-rate"></canvas>
+            </div>
+          </div>
+
+          <!-- Row 3 — full width -->
+          <div class="graph-cell graph-cell-full">
+            <div class="graph-title">Battery Voltage</div>
+            <div class="graph-canvas-wrap">
+              <canvas id="chart-battery"></canvas>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
+    </div>
+
+    <!-- ── ROW 3 RIGHT: MISSION CONTROL ──────────────────────── -->
+    <div id="mission-control-panel" class="panel content-panel">
+      <div class="panel-header">
+        <span class="panel-header-accent"></span>
+        <span class="panel-title">MISSION CONTROL</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- COLLAPSIBLE: FAULT MONITOR + MISSION STATE -->
+        <details id="fault-monitor-details" open>
+          <summary class="fault-monitor-summary">
+            <span>FAULT MONITOR &amp; STATE</span>
+            <span class="fm-chevron">▾</span>
+          </summary>
+
+          <!-- ERROR CODE SYSTEM (Phase 5) -->
+          <div id="error-code-section">
+            <div class="ec-digit-row">
+
+              <div class="ec-box nominal" id="ec-box-d1">
+                <div class="ec-box-tag">D1</div>
+                <div class="ec-digit" id="ec-d1">0</div>
+                <div class="ec-cond-name">DESCENT RT</div>
+                <div class="ec-status" id="ec-status-d1">NOMINAL</div>
+              </div>
+
+              <div class="ec-box nominal" id="ec-box-d2">
+                <div class="ec-box-tag">D2</div>
+                <div class="ec-digit" id="ec-d2">0</div>
+                <div class="ec-cond-name">GPS</div>
+                <div class="ec-status" id="ec-status-d2">NOMINAL</div>
+              </div>
+
+              <div class="ec-box nominal" id="ec-box-d3">
+                <div class="ec-box-tag">D3</div>
+                <div class="ec-digit" id="ec-d3">0</div>
+                <div class="ec-cond-name">PAYLOAD SEP</div>
+                <div class="ec-status" id="ec-status-d3">NOMINAL</div>
+              </div>
+
+              <div class="ec-box nominal" id="ec-box-d4">
+                <div class="ec-box-tag">D4</div>
+                <div class="ec-digit" id="ec-d4">0</div>
+                <div class="ec-cond-name">CHUTE</div>
+                <div class="ec-status" id="ec-status-d4">NOMINAL</div>
+              </div>
+
+            </div><!-- /.ec-digit-row -->
+
+            <div class="ec-overall nominal" id="ec-overall">
+              <span id="ec-overall-text">◉ ALL SYSTEMS NOMINAL</span>
+            </div>
+          </div><!-- /#error-code-section -->
+
+          <!-- MISSION STATE -->
+          <div class="ec-section-label mc-label-spaced">Mission State</div>
+          <div class="mc-status-row">
+            <div class="mc-state-pill inactive" id="state-sep">
+              <span class="mc-state-dot"></span>
+              <span>SEPARATION</span>
+            </div>
+            <div class="mc-state-pill inactive" id="state-chute">
+              <span class="mc-state-dot"></span>
+              <span>CHUTE</span>
+            </div>
+            <div class="mc-state-pill inactive" id="state-redundant">
+              <span class="mc-state-dot"></span>
+              <span>REDUNDANT</span>
+            </div>
+          </div>
+
+        </details>
+
+        <!-- COMMANDS — always visible, never clipped -->
+        <div id="mc-cmd-zone">
+          <div class="ec-section-label mc-label-spaced">Commands</div>
+          <div class="mc-cmd-stack">
+            <button class="mc-cmd-btn mc-cmd-amber" id="cmd-manual-sep">
+              <span class="mc-cmd-icon">⚡</span>
+              <span>MANUAL SEP</span>
+            </button>
+            <button class="mc-cmd-btn mc-cmd-red" id="cmd-emrg-chute">
+              <span class="mc-cmd-icon">🪂</span>
+              <span>EMRG CHUTE</span>
+            </button>
+            <button class="mc-cmd-btn mc-cmd-cyan" id="cmd-redundant-act">
+              <span class="mc-cmd-icon">🔁</span>
+              <span>REDUNDANT ACT</span>
+            </button>
+          </div>
+        </div><!-- /#mc-cmd-zone -->
+
+        <!-- COMMAND LOG (Phase 7) -->
+        <div id="mc-log-section">
+          <div class="ec-section-label mc-label-spaced">Command Log</div>
+          <div class="mc-log" id="cmd-log">
+            <div class="cmd-log-empty">NO COMMANDS EXECUTED</div>
+          </div>
+        </div>
+
+      </div>
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
+    </div>
+
+    <!-- ── ROW 4 LEFT: GPS TRACKING MAP ──────────────────────── -->
+    <div id="map-panel" class="panel content-panel">
+      <div class="panel-header">
+        <span class="panel-header-accent"></span>
+        <span class="panel-title">GPS TRACKING MAP</span>
+      </div>
+      <div class="panel-body">
+        <div id="map-container">
+          <div id="map-info-overlay">
+            <div class="map-info-row">
+              <span class="map-info-label">LAT</span>
+              <span class="map-info-value" id="map-lat">---</span>
+            </div>
+            <div class="map-info-row">
+              <span class="map-info-label">LON</span>
+              <span class="map-info-value" id="map-lon">---</span>
+            </div>
+            <div class="map-info-row">
+              <span class="map-info-label">ALT</span>
+              <span class="map-info-value" id="map-alt">---</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
+    </div>
+
+    <!-- ── ROW 4 CENTER: ORIENTATION VISUALIZATION ───────────── -->
+    <div id="orientation-panel" class="panel content-panel">
+      <div class="panel-header">
+        <span class="panel-header-accent"></span>
+        <span class="panel-title">ORIENTATION VISUALIZATION</span>
+      </div>
+      <div class="panel-body">
+        <div id="orientation-container">
+          <!-- Three.js canvas appended here by orientation.js -->
+        </div>
+        <div id="rpy-readout">
+          <div class="rpy-item">
+            <div class="rpy-label">ROLL</div>
+            <div class="rpy-value" id="rpy-roll">0.0°</div>
+          </div>
+          <div class="rpy-item">
+            <div class="rpy-label">PITCH</div>
+            <div class="rpy-value" id="rpy-pitch">0.0°</div>
+          </div>
+          <div class="rpy-item">
+            <div class="rpy-label">YAW</div>
+            <div class="rpy-value" id="rpy-yaw">0.0°</div>
+          </div>
+        </div>
+      </div>
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
+    </div>
+
+    <!-- ── ROW 4 RIGHT: LIVE VIDEO STREAM ────────────────────── -->
+    <div id="video-panel" class="panel content-panel">
+      <div class="panel-header">
+        <span class="panel-header-accent"></span>
+        <span class="panel-title">LIVE FEED</span>
+        <span id="stream-status" class="stream-status offline">○ OFFLINE</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Camera select + controls -->
+        <div class="vid-controls">
+          <select id="camera-select" class="vid-select">
+            <option>Scanning cameras…</option>
+          </select>
+          <button id="btn-stream-start" class="vid-btn vid-btn-start" disabled>▶ START</button>
+          <button id="btn-stream-stop"  class="vid-btn vid-btn-stop"  disabled>■ STOP</button>
+        </div>
+
+        <!-- Live video (hidden until stream starts) -->
+        <video id="stream-video" autoplay muted playsinline
+               style="display:none"></video>
+
+        <!-- Rocket cam demo video (hidden until ROCKET CAM selected + started) -->
+        <video id="rocket-cam-video" muted loop playsinline preload="none"
+               style="display:none">
+          <source src="https://www.nasa.gov/wp-content/uploads/2023/03/jsc2023e006519.mp4"
+                  type="video/mp4">
+          <source src="https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4"
+                  type="video/mp4">
+        </video>
+
+        <!-- Placeholder (visible until stream starts or error) -->
+        <div id="vid-placeholder" class="vid-placeholder">
+          <div class="vid-placeholder-icon">⊙</div>
+          <div class="vid-placeholder-text">AWAITING VIDEO FEED</div>
+        </div>
+
+        <!-- Error message (hidden until an error occurs) -->
+        <div id="vid-error" class="vid-error" style="display:none"></div>
+
+      </div>
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
+    </div>
+
+  </div><!-- /.dashboard-grid -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 7 — Command Confirmation Modal                       -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div id="cmd-modal" class="cmd-modal-overlay" style="display:none">
+    <div class="cmd-modal-card">
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
+
+      <div class="cmd-modal-header">
+        <div class="cmd-modal-pretitle">CONFIRM COMMAND</div>
+        <div class="cmd-modal-name" id="cmd-modal-name">MANUAL SEPARATION</div>
+      </div>
+
+      <div class="cmd-modal-warning">⚠ THIS ACTION CANNOT BE UNDONE</div>
+
+      <div class="cmd-modal-footer">
+        <button class="cmd-modal-btn cmd-modal-confirm" id="cmd-modal-confirm">✔ CONFIRM</button>
+        <button class="cmd-modal-btn cmd-modal-cancel"  id="cmd-modal-cancel">✕ CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 3 — Telemetry Simulation Engine                      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/telemetry.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 4 — Telemetry Display Panel                          -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/display.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 5 — Error Code System                                -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/errorcode.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 6 — Real-Time Graphs                                 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/graphs.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 2 — Top Control Bar                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/controls.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 8 — GPS Tracking Map                                 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/map.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 9 — Orientation Visualization                        -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/orientation.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 10 — Live Video Stream                               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/video.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- PHASE 11 — Data Management & Export                        -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script src="js/datamanager.js"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- STARFIELD ANIMATION + LIVE CLOCK (Phase 1 inline scripts)  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <script>
+    // ── Starfield ────────────────────────────────────────────────
+    (function () {
+      const canvas = document.getElementById('starfield');
+      const ctx    = canvas.getContext('2d');
+      let   stars  = [];
+
+      function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      function makeStars() {
+        stars = [];
+        const count = Math.floor((canvas.width * canvas.height) / 5000);
+        for (let i = 0; i < Math.max(count, 220); i++) {
+          stars.push({
+            x:       Math.random() * canvas.width,
+            y:       Math.random() * canvas.height,
+            vx:      (Math.random() - 0.5) * 0.12,
+            vy:      (Math.random() - 0.5) * 0.12,
+            r:       Math.random() * 1.4 + 0.2,
+            alpha:   Math.random() * 0.65 + 0.15,
+            phase:   Math.random() * Math.PI * 2,
+            speed:   0.008 + Math.random() * 0.018,
+          });
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const s of stars) {
+          s.x    += s.vx;
+          s.y    += s.vy;
+          s.phase += s.speed;
+          if (s.x < 0) s.x = canvas.width;
+          if (s.x > canvas.width)  s.x = 0;
+          if (s.y < 0) s.y = canvas.height;
+          if (s.y > canvas.height) s.y = 0;
+
+          const a = s.alpha * (0.55 + 0.45 * Math.sin(s.phase));
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(210,235,255,${a.toFixed(3)})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+
+      resize();
+      makeStars();
+      draw();
+      window.addEventListener('resize', () => { resize(); makeStars(); });
+    })();
+
+    // ── Live UTC clock ───────────────────────────────────────────
+    (function () {
+      const clockEl = document.getElementById('clock-display');
+      function tick() {
+        const n = new Date();
+        const h = String(n.getUTCHours()).padStart(2, '0');
+        const m = String(n.getUTCMinutes()).padStart(2, '0');
+        const s = String(n.getUTCSeconds()).padStart(2, '0');
+        clockEl.textContent = `${h}:${m}:${s}`;
+      }
+      setInterval(tick, 1000);
+      tick();
+    })();
+  </script>
+
+</body>
+</html>

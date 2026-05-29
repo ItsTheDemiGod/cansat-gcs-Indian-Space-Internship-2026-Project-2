@@ -1,0 +1,1950 @@
+/* ================================================================
+   CANSAT-GCS | India Space Lab
+   Design System — "Deep Space Operations"
+   Phase 1: Project Scaffolding & Interface Layout
+   ================================================================ */
+
+/* ── CSS Variables ─────────────────────────────────────────────── */
+:root {
+  --bg-deep:          #010a14;
+  --bg-panel:         rgba(5, 18, 35, 0.75);
+  --border-glow:      #00d4ff;
+  --accent-primary:   #00d4ff;
+  --accent-secondary: #7b4fff;
+  --accent-amber:     #ffaa00;
+  --accent-green:     #00ff88;
+  --accent-red:       #ff3b3b;
+  --text-primary:     #e8f4fd;
+  --text-secondary:   #7aaec8;
+  --text-mono:        #00d4ff;
+  --grid-line:        rgba(0, 212, 255, 0.08);
+
+  --panel-border:     rgba(0, 212, 255, 0.25);
+  --panel-shadow:     0 0 20px rgba(0, 212, 255, 0.08), inset 0 0 40px rgba(0, 0, 0, 0.4);
+  --glow-sm:          0 0 8px  rgba(0, 212, 255, 0.5);
+  --glow-md:          0 0 16px rgba(0, 212, 255, 0.4);
+  --glow-lg:          0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+
+/* ── Reset & Base ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width:  100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--bg-deep);
+  background-image:
+    radial-gradient(ellipse at 15% 20%, rgba(0, 30, 60, 0.6) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 80%, rgba(20, 5, 45, 0.5) 0%, transparent 55%);
+  color:       var(--text-primary);
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 400;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+
+/* ================================================================
+   BACKGROUND LAYERS
+   ================================================================ */
+
+/* ── Layer 0: Starfield canvas ──────────────────────────────────── */
+#starfield {
+  position:       fixed;
+  inset:          0;
+  width:          100%;
+  height:         100%;
+  z-index:        0;
+  pointer-events: none;
+}
+
+
+/* ── Layer 1: Nebula blobs ──────────────────────────────────────── */
+.nebula-container {
+  position:       fixed;
+  inset:          0;
+  z-index:        1;
+  pointer-events: none;
+  overflow:       hidden;
+}
+
+.nebula {
+  position:        absolute;
+  border-radius:   50%;
+  filter:          blur(90px);
+  transform-origin: center center;
+}
+
+.nebula-1 {
+  width:      650px;
+  height:     650px;
+  background: radial-gradient(circle, rgba(123, 79, 255, 0.18) 0%, transparent 68%);
+  top:   -120px;
+  left:  -80px;
+  animation: nebula-breathe 9s  ease-in-out infinite;
+}
+
+.nebula-2 {
+  width:      550px;
+  height:     550px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, transparent 68%);
+  bottom: -80px;
+  right:   150px;
+  animation: nebula-breathe 11s ease-in-out infinite 2.5s;
+}
+
+.nebula-3 {
+  width:      420px;
+  height:     420px;
+  background: radial-gradient(circle, rgba(123, 79, 255, 0.14) 0%, transparent 68%);
+  top:  42%;
+  left: calc(50% - 210px);
+  animation: nebula-breathe 13s ease-in-out infinite 5s;
+}
+
+.nebula-4 {
+  width:      380px;
+  height:     380px;
+  background: radial-gradient(circle, rgba(0, 180, 255, 0.09) 0%, transparent 68%);
+  top:   18%;
+  right: -60px;
+  animation: nebula-breathe 10s ease-in-out infinite 1.2s;
+}
+
+@keyframes nebula-breathe {
+  0%, 100% {
+    opacity:   0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity:   0.55;
+    transform: scale(1.18);
+  }
+}
+
+
+/* ── Layer 2: CRT scanline overlay ─────────────────────────────── */
+.scanline-overlay {
+  position:       fixed;
+  inset:          0;
+  z-index:        2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent        0px,
+    transparent        3px,
+    rgba(0, 0, 0, 0.04) 3px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+}
+
+
+/* ================================================================
+   DASHBOARD GRID  (z-index: 10+)
+   ================================================================ */
+.dashboard-grid {
+  position:              relative;
+  z-index:               10;
+  display:               grid;
+  grid-template-rows:    auto auto 1fr 1fr;
+  grid-template-columns: 260px 1fr 320px;
+  gap:                   10px;
+  padding:               10px;
+  height:                100vh;
+}
+
+
+/* ================================================================
+   PANEL BASE — glassmorphism card
+   ================================================================ */
+.panel {
+  background:     var(--bg-panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border:         1px solid var(--panel-border);
+  box-shadow:     var(--panel-shadow);
+  border-radius:  4px;
+  position:       relative;
+  overflow:       hidden;
+}
+
+/* Subtle inner grid texture */
+.panel::after {
+  content:          '';
+  position:         absolute;
+  inset:            0;
+  pointer-events:   none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:  40px 40px;
+  z-index:          0;
+}
+
+/* Keep panel content above grid texture */
+.panel > * {
+  position: relative;
+  z-index:  1;
+}
+
+
+/* ── Panel header strip ─────────────────────────────────────────── */
+.panel-header {
+  display:      flex;
+  align-items:  center;
+  gap:          10px;
+  padding:      9px 14px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.12);
+  flex-shrink:  0;
+}
+
+.panel-header-accent {
+  display:       inline-block;
+  width:         3px;
+  height:        16px;
+  background:    var(--border-glow);
+  box-shadow:    0 0 8px rgba(0, 212, 255, 0.8);
+  border-radius: 1px;
+  flex-shrink:   0;
+}
+
+.panel-title {
+  font-family:    'Orbitron', sans-serif;
+  font-size:      10px;
+  font-weight:    600;
+  letter-spacing: 0.18em;
+  color:          var(--text-primary);
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+
+/* ── Panel body ─────────────────────────────────────────────────── */
+.content-panel {
+  display:        flex;
+  flex-direction: column;
+}
+
+.panel-body {
+  flex:     1;
+  overflow: hidden;
+  padding:  12px;
+  display:  flex;
+  flex-direction: column;
+}
+
+
+/* ── Corner L-bracket decorations ──────────────────────────────── */
+.corner {
+  position:     absolute;
+  width:        14px;
+  height:       14px;
+  border-color: rgba(0, 212, 255, 0.65);
+  border-style: solid;
+  z-index:      20;
+  pointer-events: none;
+}
+
+.corner-tl { top: 5px;    left: 5px;   border-width: 2px 0 0 2px; }
+.corner-tr { top: 5px;    right: 5px;  border-width: 2px 2px 0 0; }
+.corner-bl { bottom: 5px; left: 5px;   border-width: 0 0 2px 2px; }
+.corner-br { bottom: 5px; right: 5px;  border-width: 0 2px 2px 0; }
+
+
+/* ── Placeholder content (Phases not yet built) ─────────────────── */
+.panel-placeholder {
+  flex:            1;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             8px;
+  border:          1px dashed rgba(0, 212, 255, 0.12);
+  border-radius:   3px;
+  min-height:      60px;
+}
+
+.placeholder-icon {
+  font-size:   28px;
+  color:       rgba(0, 212, 255, 0.18);
+  line-height: 1;
+}
+
+.placeholder-label {
+  font-family:    'Orbitron', sans-serif;
+  font-size:      9px;
+  letter-spacing: 0.22em;
+  color:          rgba(0, 212, 255, 0.22);
+  text-transform: uppercase;
+}
+
+.placeholder-phase-tag {
+  font-family:    'Share Tech Mono', monospace;
+  font-size:      9px;
+  letter-spacing: 0.1em;
+  color:          rgba(123, 79, 255, 0.35);
+  text-transform: uppercase;
+}
+
+
+/* ================================================================
+   HEADER PANEL  (row 1, spans all columns)
+   ================================================================ */
+#header {
+  grid-column:     1 / -1;
+  grid-row:        1;
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         0 20px;
+  height:          62px;
+  border-color:    rgba(0, 212, 255, 0.38);
+  box-shadow:
+    0 0 30px rgba(0, 212, 255, 0.10),
+    0 2px 0   rgba(0, 212, 255, 0.20),
+    inset 0 0 60px rgba(0, 0, 0, 0.5);
+  flex-shrink:     0;
+}
+
+/* Remove grid texture from header — it clutters the bar */
+#header::after { display: none; }
+
+/* ── Logo group ─────────────────────────────────────────────────── */
+.header-logo {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+}
+
+.logo-emblem svg {
+  filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.6));
+  flex-shrink: 0;
+}
+
+.logo-text-group {
+  display:     flex;
+  align-items: baseline;
+  gap:         8px;
+}
+
+.logo-main {
+  font-family:    'Orbitron', sans-serif;
+  font-size:      19px;
+  font-weight:    900;
+  color:          var(--accent-primary);
+  text-shadow:    0 0 24px rgba(0, 212, 255, 0.55);
+  letter-spacing: 0.12em;
+  white-space:    nowrap;
+}
+
+.logo-pipe {
+  color:       rgba(0, 212, 255, 0.35);
+  font-size:   16px;
+  font-weight: 300;
+}
+
+.logo-org {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      11px;
+  font-weight:    300;
+  letter-spacing: 0.22em;
+  color:          var(--text-secondary);
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+/* ── Mission elapsed time (center) ─────────────────────────────── */
+.header-center {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+}
+
+.met-block {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            2px;
+}
+
+.met-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      8px;
+  font-weight:    400;
+  letter-spacing: 0.28em;
+  color:          rgba(122, 174, 200, 0.6);
+  text-transform: uppercase;
+}
+
+.met-value {
+  font-family:    'Share Tech Mono', monospace;
+  font-size:      22px;
+  color:          var(--accent-amber);
+  text-shadow:    0 0 12px rgba(255, 170, 0, 0.45);
+  letter-spacing: 0.05em;
+}
+
+/* ── Clock + status (right) ─────────────────────────────────────── */
+.header-right {
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-end;
+  gap:            5px;
+}
+
+.clock-block {
+  display:     flex;
+  align-items: baseline;
+  gap:         7px;
+}
+
+.clock-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      8px;
+  font-weight:    400;
+  letter-spacing: 0.25em;
+  color:          rgba(122, 174, 200, 0.55);
+  text-transform: uppercase;
+}
+
+.clock-value {
+  font-family:    'Share Tech Mono', monospace;
+  font-size:      24px;
+  color:          var(--accent-primary);
+  text-shadow:    var(--glow-md);
+  letter-spacing: 0.04em;
+}
+
+.status-block {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+}
+
+.status-dot {
+  display:       inline-block;
+  width:         9px;
+  height:        9px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+
+.status-dot.standby {
+  background: var(--accent-amber);
+  box-shadow: 0 0 10px var(--accent-amber), 0 0 4px var(--accent-amber);
+  animation:  status-blink 1.6s ease-in-out infinite;
+}
+
+.status-dot.active {
+  background: var(--accent-green);
+  box-shadow: 0 0 10px var(--accent-green), 0 0 4px var(--accent-green);
+  animation:  status-blink 0.9s ease-in-out infinite;
+}
+
+.status-dot.offline {
+  background: var(--accent-red);
+  box-shadow: 0 0 10px var(--accent-red);
+}
+
+.status-text {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      9px;
+  font-weight:    600;
+  letter-spacing: 0.2em;
+  color:          var(--text-secondary);
+  text-transform: uppercase;
+}
+
+@keyframes status-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+
+
+/* ================================================================
+   CONTROL BAR  (row 2, spans all columns)
+   ================================================================ */
+#control-bar {
+  grid-column:     1 / -1;
+  grid-row:        2;
+  display:         flex;
+  align-items:     center;
+  gap:             8px;
+  padding:         0 18px;
+  height:          52px;
+  flex-shrink:     0;
+}
+
+.control-bar-placeholder {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      10px;
+  letter-spacing: 0.22em;
+  color:          rgba(0, 212, 255, 0.22);
+  text-transform: uppercase;
+  display:        flex;
+  align-items:    center;
+  gap:            8px;
+}
+
+.placeholder-glyph {
+  font-size: 14px;
+  color:     rgba(0, 212, 255, 0.3);
+}
+
+.placeholder-phase {
+  color: rgba(123, 79, 255, 0.35);
+}
+
+/* Remove grid texture from control bar */
+#control-bar::after { display: none; }
+
+
+/* ================================================================
+   CONTENT PANELS — grid placement
+   ================================================================ */
+#telemetry-panel       { grid-column: 1; grid-row: 3; }
+#graphs-panel          { grid-column: 2; grid-row: 3; }
+#mission-control-panel { grid-column: 3; grid-row: 3; }
+#map-panel             { grid-column: 1; grid-row: 4; }
+#orientation-panel     { grid-column: 2; grid-row: 4; }
+#video-panel           { grid-column: 3; grid-row: 4; }
+
+
+/* ================================================================
+   UTILITY / TYPOGRAPHY
+   ================================================================ */
+.font-mono  { font-family: 'Share Tech Mono', monospace; }
+.font-orbit { font-family: 'Orbitron', sans-serif; }
+.font-body  { font-family: 'Exo 2', sans-serif; }
+
+.text-cyan   { color: var(--accent-primary); }
+.text-purple { color: var(--accent-secondary); }
+.text-amber  { color: var(--accent-amber); }
+.text-green  { color: var(--accent-green); }
+.text-red    { color: var(--accent-red); }
+.text-muted  { color: var(--text-secondary); }
+
+
+/* ================================================================
+   MICRO-ANIMATION CLASSES  (used by later phases)
+   ================================================================ */
+
+/* Telemetry value flash on update */
+@keyframes value-flash {
+  0%   { color: var(--accent-primary); text-shadow: var(--glow-lg); }
+  50%  { color: #ffffff;               text-shadow: 0 0 20px #ffffff; }
+  100% { color: var(--text-mono);      text-shadow: none; }
+}
+
+.value-flash {
+  animation: value-flash 0.4s ease-out forwards;
+}
+
+/* Error digit fault pulse */
+@keyframes fault-pulse {
+  0%, 100% { opacity: 1;    box-shadow: 0 0 12px var(--accent-red); }
+  50%       { opacity: 0.4; box-shadow: 0 0 4px  var(--accent-red); }
+}
+
+.fault-pulse {
+  animation: fault-pulse 0.7s ease-in-out infinite;
+}
+
+/* Map marker pulse ring */
+@keyframes marker-ring {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.marker-ring {
+  animation: marker-ring 1.4s ease-out infinite;
+}
+
+/* Button glow hover/active states (defined here for Phase 2+) */
+.btn {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      11px;
+  font-weight:    600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor:         pointer;
+  border-radius:  3px;
+  padding:        8px 16px;
+  border:         1px solid;
+  transition:     box-shadow 0.2s ease, transform 0.1s ease, background 0.2s ease;
+}
+
+.btn:hover  { filter: brightness(1.15); }
+.btn:active { transform: scale(0.97); }
+
+.btn-cyan {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.5);
+  color: var(--accent-primary);
+}
+.btn-cyan:hover {
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.4);
+}
+
+.btn-green {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: rgba(0, 255, 136, 0.5);
+  color: var(--accent-green);
+}
+.btn-green:hover {
+  box-shadow: 0 0 14px rgba(0, 255, 136, 0.4);
+}
+
+.btn-red {
+  background: rgba(255, 59, 59, 0.1);
+  border-color: rgba(255, 59, 59, 0.5);
+  color: var(--accent-red);
+}
+.btn-red:hover {
+  box-shadow: 0 0 14px rgba(255, 59, 59, 0.4);
+}
+
+.btn-amber {
+  background: rgba(255, 170, 0, 0.1);
+  border-color: rgba(255, 170, 0, 0.5);
+  color: var(--accent-amber);
+}
+.btn-amber:hover {
+  box-shadow: 0 0 14px rgba(255, 170, 0, 0.4);
+}
+
+
+/* ================================================================
+   PHASE 2 — CONTROL BAR BUTTONS
+   ================================================================ */
+
+/* ── Base control-bar button ─────────────────────────────────────── */
+.cb-btn {
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+  font-family:    'Exo 2', sans-serif;
+  font-size:      10.5px;
+  font-weight:    600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+  cursor:         pointer;
+  border-radius:  3px;
+  padding:        7px 13px;
+  border:         1px solid;
+  background:     transparent;
+  position:       relative;
+  overflow:       hidden;
+  flex-shrink:    0;
+  transition:     box-shadow 0.18s ease,
+                  border-color 0.18s ease,
+                  background 0.18s ease,
+                  transform 0.1s ease,
+                  opacity 0.18s ease;
+}
+
+/* Ripple-like inner highlight on hover */
+.cb-btn::before {
+  content:    '';
+  position:   absolute;
+  inset:      0;
+  background: currentColor;
+  opacity:    0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+.cb-btn:hover:not(:disabled)::before { opacity: 0.07; }
+.cb-btn:active:not(:disabled)        { transform: scale(0.97); }
+
+/* Disabled state */
+.cb-btn:disabled {
+  opacity: 0.28;
+  cursor:  not-allowed;
+}
+
+.cb-icon {
+  font-size:   12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Green — START TELEMETRY ─────────────────────────────────────── */
+.cb-btn-green {
+  background:   rgba(0, 255, 136, 0.07);
+  border-color: rgba(0, 255, 136, 0.42);
+  color:        var(--accent-green);
+}
+.cb-btn-green:hover:not(:disabled) {
+  border-color: rgba(0, 255, 136, 0.75);
+  box-shadow:   0 0 16px rgba(0, 255, 136, 0.32),
+                inset 0 0 8px rgba(0, 255, 136, 0.05);
+}
+
+/* ── Red — STOP TELEMETRY ────────────────────────────────────────── */
+.cb-btn-red {
+  background:   rgba(255, 59, 59, 0.07);
+  border-color: rgba(255, 59, 59, 0.42);
+  color:        var(--accent-red);
+}
+.cb-btn-red:hover:not(:disabled) {
+  border-color: rgba(255, 59, 59, 0.75);
+  box-shadow:   0 0 16px rgba(255, 59, 59, 0.32),
+                inset 0 0 8px rgba(255, 59, 59, 0.05);
+}
+
+/* ================================================================
+   PHASE 4 — TELEMETRY DISPLAY PANEL
+   ================================================================ */
+
+#telemetry-panel .panel-body {
+  overflow-y:    auto;
+  gap:           0;
+  padding:       10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.18) transparent;
+}
+
+.tele-section {
+  margin-bottom: 9px;
+}
+
+.tele-section:last-child {
+  margin-bottom: 0;
+}
+
+.tele-section-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      8px;
+  font-weight:    600;
+  letter-spacing: 0.26em;
+  color:          var(--text-secondary);
+  text-transform: uppercase;
+  opacity:        0.65;
+  margin-bottom:  5px;
+  padding-left:   2px;
+}
+
+.tele-grid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   5px;
+}
+
+.tele-card {
+  background:    rgba(0, 212, 255, 0.03);
+  border:        1px solid rgba(0, 212, 255, 0.1);
+  border-radius: 3px;
+  padding:       5px 7px 6px;
+  min-width:     0;
+}
+
+.tele-card-full {
+  grid-column: 1 / -1;
+}
+
+.tele-card-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      7.5px;
+  font-weight:    400;
+  letter-spacing: 0.2em;
+  color:          var(--text-secondary);
+  text-transform: uppercase;
+  opacity:        0.7;
+  margin-bottom:  2px;
+  white-space:    nowrap;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+}
+
+.tele-card-value-wrap {
+  display:     flex;
+  align-items: baseline;
+  gap:         3px;
+  min-width:   0;
+}
+
+.tele-card-value {
+  font-family:  'Share Tech Mono', monospace;
+  font-size:    14px;
+  color:        var(--text-mono);
+  line-height:  1.15;
+  white-space:  nowrap;
+  overflow:     hidden;
+  text-overflow: ellipsis;
+}
+
+.tele-card-value--sm {
+  font-size: 13px;
+}
+
+.tele-card-unit {
+  font-family: 'Exo 2', sans-serif;
+  font-size:   8.5px;
+  color:       var(--text-secondary);
+  opacity:     0.55;
+  flex-shrink: 0;
+}
+
+
+/* Subtle pulse on STOP when telemetry is live */
+.cb-btn-red:not(:disabled) {
+  animation: stop-ready-pulse 2.2s ease-in-out infinite;
+}
+@keyframes stop-ready-pulse {
+  0%, 100% { box-shadow: 0 0 6px  rgba(255, 59, 59, 0.18); }
+  50%       { box-shadow: 0 0 18px rgba(255, 59, 59, 0.40); }
+}
+
+/* ── Cyan — utility buttons ──────────────────────────────────────── */
+.cb-btn-cyan {
+  background:   rgba(0, 212, 255, 0.05);
+  border-color: rgba(0, 212, 255, 0.32);
+  color:        var(--accent-primary);
+}
+.cb-btn-cyan:hover:not(:disabled) {
+  border-color: rgba(0, 212, 255, 0.65);
+  box-shadow:   0 0 14px rgba(0, 212, 255, 0.28),
+                inset 0 0 8px rgba(0, 212, 255, 0.04);
+}
+
+/* ── Group separator ─────────────────────────────────────────────── */
+.cb-sep {
+  width:        1px;
+  height:       26px;
+  background:   linear-gradient(
+                  transparent,
+                  rgba(0, 212, 255, 0.22) 30%,
+                  rgba(0, 212, 255, 0.22) 70%,
+                  transparent
+                );
+  flex-shrink:  0;
+  margin:       0 4px;
+}
+
+/* ── PC Time sync readout ────────────────────────────────────────── */
+.cb-time-group {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  margin-left: auto;
+}
+
+.cb-time-readout {
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            1px;
+}
+
+.cb-time-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      7px;
+  font-weight:    400;
+  letter-spacing: 0.28em;
+  color:          rgba(122, 174, 200, 0.45);
+  text-transform: uppercase;
+}
+
+.cb-time-value {
+  font-family:    'Share Tech Mono', monospace;
+  font-size:      16px;
+  color:          var(--accent-primary);
+  text-shadow:    0 0 8px rgba(0, 212, 255, 0.35);
+  letter-spacing: 0.05em;
+  transition:     color 0.2s ease, text-shadow 0.2s ease;
+}
+
+/* Flash green briefly on successful sync */
+@keyframes sync-confirm {
+  0%   { color: var(--accent-green); text-shadow: 0 0 14px var(--accent-green); }
+  100% { color: var(--accent-primary); text-shadow: 0 0 8px rgba(0, 212, 255, 0.35); }
+}
+.sync-flash {
+  animation: sync-confirm 0.7s ease-out forwards;
+}
+
+
+/* ================================================================
+   PHASE 5 — ERROR CODE SYSTEM
+   ================================================================ */
+
+#error-code-section {
+  flex-shrink:   0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.ec-cmd-placeholder {
+  flex:       1;
+  margin-top: 8px;
+}
+
+.ec-section-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      9px;
+  font-weight:    600;
+  letter-spacing: 0.2em;
+  color:          var(--text-secondary);
+  text-transform: uppercase;
+  opacity:        0.65;
+  margin-bottom:  3px;
+  padding-left:   2px;
+}
+
+/* ── Four digit boxes row ─────────────────────────────────────── */
+.ec-digit-row {
+  display:               grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap:                   4px;
+  margin-bottom:         5px;
+}
+
+.ec-box {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  padding:        3px 2px;
+  border-radius:  3px;
+  border:         1px solid;
+  text-align:     center;
+  transition:     border-color 0.25s ease,
+                  box-shadow   0.25s ease,
+                  background   0.25s ease;
+}
+
+.ec-box.nominal {
+  background:   rgba(0, 255, 136, 0.04);
+  border-color: rgba(0, 255, 136, 0.28);
+  box-shadow:   0 0 8px rgba(0, 255, 136, 0.07);
+}
+
+.ec-box.fault {
+  background:   rgba(255, 59, 59, 0.06);
+  border-color: rgba(255, 59, 59, 0.48);
+}
+
+/* Box tag (D1 / D2 / D3 / D4) */
+.ec-box-tag {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      6.5px;
+  font-weight:    600;
+  letter-spacing: 0.12em;
+  color:          var(--text-secondary);
+  opacity:        0.5;
+  margin-bottom:  1px;
+}
+
+/* Large digit */
+.ec-digit {
+  font-family: 'Orbitron', sans-serif;
+  font-size:   1.4rem;
+  font-weight: 900;
+  line-height: 1;
+  transition:  color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.ec-box.nominal .ec-digit {
+  color:       var(--accent-green);
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.45);
+}
+
+.ec-box.fault .ec-digit {
+  color:       var(--accent-red);
+  text-shadow: 0 0 10px rgba(255, 59, 59, 0.5);
+}
+
+/* Condition name (DESCENT RT / GPS / etc.) */
+.ec-cond-name {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      6px;
+  letter-spacing: 0.06em;
+  color:          var(--text-secondary);
+  opacity:        0.65;
+  text-transform: uppercase;
+  margin-top:     2px;
+  white-space:    nowrap;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+  max-width:      100%;
+}
+
+/* NOMINAL / FAULT status text */
+.ec-status {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      6px;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top:     1px;
+  transition:     color 0.2s ease;
+}
+
+.ec-box.nominal .ec-status {
+  color:   var(--accent-green);
+  opacity: 0.85;
+}
+
+.ec-box.fault .ec-status {
+  color: var(--accent-red);
+}
+
+/* ── Overall system status line ──────────────────────────────── */
+.ec-overall {
+  text-align:    center;
+  padding:       3px 6px;
+  border-radius: 3px;
+  border:        1px solid;
+  transition:    all 0.3s ease;
+}
+
+.ec-overall.nominal {
+  background:   rgba(0, 255, 136, 0.04);
+  border-color: rgba(0, 255, 136, 0.22);
+}
+
+.ec-overall.fault {
+  background:   rgba(255, 59, 59, 0.06);
+  border-color: rgba(255, 59, 59, 0.4);
+}
+
+#ec-overall-text {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      7.5px;
+  font-weight:    600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ec-overall.nominal #ec-overall-text { color: var(--accent-green); }
+.ec-overall.fault   #ec-overall-text { color: var(--accent-red); }
+
+
+/* ================================================================
+   PHASE 6 — REAL-TIME GRAPHS
+   ================================================================ */
+
+#graphs-panel .panel-body {
+  padding: 8px 10px 10px;
+}
+
+.graph-grid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows:    1fr 1fr 1fr;
+  gap:                   8px;
+  flex:                  1;
+  min-height:            0;
+  overflow:              hidden;
+}
+
+.graph-cell {
+  display:        flex;
+  flex-direction: column;
+  min-height:     0;
+  min-width:      0;
+}
+
+.graph-cell-full {
+  grid-column: 1 / -1;
+}
+
+.graph-title {
+  font-family:    'Orbitron', sans-serif;
+  font-size:      7.5px;
+  font-weight:    600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color:          var(--text-secondary);
+  opacity:        0.75;
+  margin-bottom:  3px;
+  flex-shrink:    0;
+  padding-left:   2px;
+}
+
+.graph-canvas-wrap {
+  flex:       1;
+  position:   relative;
+  min-height: 0;
+}
+
+
+/* ================================================================
+   PHASE 7 — MISSION CONTROL PANEL
+   ================================================================ */
+
+/* ── Shared label spacing modifier ─────────────────────────── */
+.mc-label-spaced {
+  margin-top: 4px;
+}
+
+/* ── Fault Monitor collapsible wrapper ──────────────────────── */
+#fault-monitor-details {
+  flex-shrink: 1;
+}
+
+.fault-monitor-summary {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  list-style:      none;
+  cursor:          pointer;
+  font-family:     'Exo 2', sans-serif;
+  font-size:       9px;
+  font-weight:     600;
+  letter-spacing:  0.2em;
+  color:           var(--text-secondary);
+  text-transform:  uppercase;
+  opacity:         0.8;
+  padding:         0 2px 3px;
+  margin-bottom:   3px;
+  border-bottom:   1px solid rgba(0, 212, 255, 0.14);
+  user-select:     none;
+}
+
+.fault-monitor-summary::-webkit-details-marker { display: none; }
+.fault-monitor-summary::marker { display: none; }
+
+.fm-chevron {
+  font-size:   8px;
+  opacity:     0.5;
+  transition:  transform 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+#fault-monitor-details:not([open]) .fm-chevron {
+  transform: rotate(-90deg);
+}
+
+/* ── Mission state pills ────────────────────────────────────── */
+.mc-status-row {
+  display:   flex;
+  gap:       4px;
+  flex-wrap: wrap;
+}
+
+.mc-state-pill {
+  display:      flex;
+  align-items:  center;
+  gap:          4px;
+  padding:      2px 6px;
+  border-radius: 20px;
+  border:       1px solid;
+  font-family:  'Exo 2', sans-serif;
+  font-size:    7px;
+  font-weight:  600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space:  nowrap;
+  transition:   background 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.mc-state-dot {
+  width:         5px;
+  height:        5px;
+  border-radius: 50%;
+  flex-shrink:   0;
+  transition:    background 0.3s, box-shadow 0.3s;
+}
+
+.mc-state-pill.inactive {
+  background:   rgba(255,255,255,0.02);
+  border-color: rgba(122,174,200,0.18);
+  color:        rgba(122,174,200,0.35);
+}
+.mc-state-pill.inactive .mc-state-dot {
+  background: rgba(122,174,200,0.25);
+}
+
+.mc-state-pill.active-green {
+  background:   rgba(0,255,136,0.06);
+  border-color: rgba(0,255,136,0.38);
+  color:        var(--accent-green);
+}
+.mc-state-pill.active-green .mc-state-dot {
+  background: var(--accent-green);
+  box-shadow: 0 0 5px var(--accent-green);
+}
+
+.mc-state-pill.active-red {
+  background:   rgba(255,59,59,0.06);
+  border-color: rgba(255,59,59,0.4);
+  color:        var(--accent-red);
+}
+.mc-state-pill.active-red .mc-state-dot {
+  background: var(--accent-red);
+  box-shadow: 0 0 5px var(--accent-red);
+}
+
+.mc-state-pill.active-amber {
+  background:   rgba(255,170,0,0.06);
+  border-color: rgba(255,170,0,0.38);
+  color:        var(--accent-amber);
+}
+.mc-state-pill.active-amber .mc-state-dot {
+  background: var(--accent-amber);
+  box-shadow: 0 0 5px var(--accent-amber);
+}
+
+/* ── Command button stack ───────────────────────────────────── */
+#mc-cmd-zone {
+  flex-shrink: 0;
+}
+
+.mc-cmd-stack {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+}
+
+.mc-cmd-btn {
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+  width:          100%;
+  font-family:    'Exo 2', sans-serif;
+  font-size:      9px;
+  font-weight:    600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor:         pointer;
+  border-radius:  3px;
+  padding:        8px 12px;
+  border:         1px solid;
+  background:     transparent;
+  position:       relative;
+  overflow:       hidden;
+  max-height:     34px;
+  transition:     box-shadow 0.18s ease,
+                  border-color 0.18s ease,
+                  transform 0.1s ease;
+}
+
+.mc-cmd-btn::before {
+  content:        '';
+  position:       absolute;
+  inset:          0;
+  background:     currentColor;
+  opacity:        0;
+  transition:     opacity 0.18s ease;
+  pointer-events: none;
+}
+.mc-cmd-btn:hover::before { opacity: 0.07; }
+.mc-cmd-btn:active        { transform: scale(0.97); }
+
+.mc-cmd-icon {
+  font-size:   11px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.mc-cmd-amber {
+  background:   rgba(255,170,0,0.06);
+  border-color: rgba(255,170,0,0.40);
+  color:        var(--accent-amber);
+}
+.mc-cmd-amber:hover {
+  border-color: rgba(255,170,0,0.72);
+  box-shadow:   0 0 16px rgba(255,170,0,0.26);
+}
+
+.mc-cmd-red {
+  background:   rgba(255,59,59,0.06);
+  border-color: rgba(255,59,59,0.40);
+  color:        var(--accent-red);
+}
+.mc-cmd-red:hover {
+  border-color: rgba(255,59,59,0.75);
+  box-shadow:   0 0 16px rgba(255,59,59,0.28);
+}
+
+.mc-cmd-cyan {
+  background:   rgba(0,212,255,0.05);
+  border-color: rgba(0,212,255,0.30);
+  color:        var(--accent-primary);
+}
+.mc-cmd-cyan:hover {
+  border-color: rgba(0,212,255,0.65);
+  box-shadow:   0 0 14px rgba(0,212,255,0.26);
+}
+
+/* ── Command log ────────────────────────────────────────────── */
+#mc-log-section {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  min-height:     0;
+}
+
+.mc-log {
+  flex:            1;
+  overflow-y:      auto;
+  min-height:      0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,212,255,0.15) transparent;
+}
+
+.cmd-log-empty {
+  font-family:    'Share Tech Mono', monospace;
+  font-size:      8px;
+  letter-spacing: 0.15em;
+  color:          rgba(122,174,200,0.22);
+  text-align:     center;
+  padding:        10px 0;
+}
+
+.cmd-log-entry {
+  display:       flex;
+  align-items:   center;
+  gap:           5px;
+  padding:       4px 4px;
+  border-bottom: 1px solid rgba(0,212,255,0.06);
+  font-family:   'Share Tech Mono', monospace;
+}
+
+.cmd-log-time {
+  font-size:  8.5px;
+  color:      var(--text-secondary);
+  opacity:    0.55;
+  flex-shrink: 0;
+}
+
+.cmd-log-name {
+  font-size:     8.5px;
+  color:         var(--text-secondary);
+  flex:          1;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+}
+
+.cmd-log-badge {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      6.5px;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  color:          var(--accent-green);
+  background:     rgba(0,255,136,0.07);
+  border:         1px solid rgba(0,255,136,0.22);
+  border-radius:  2px;
+  padding:        1px 5px;
+  flex-shrink:    0;
+}
+
+/* ── Confirmation modal ─────────────────────────────────────── */
+.cmd-modal-overlay {
+  position:        fixed;
+  inset:           0;
+  z-index:         9999;
+  background:      rgba(1,10,20,0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+}
+
+.cmd-modal-card {
+  background:      rgba(5,18,35,0.97);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border:          1px solid rgba(0,212,255,0.32);
+  box-shadow:      0 0 60px rgba(0,212,255,0.10),
+                   0 24px 80px rgba(0,0,0,0.75);
+  border-radius:   6px;
+  padding:         32px 36px 28px;
+  min-width:       300px;
+  max-width:       420px;
+  width:           88vw;
+  text-align:      center;
+  position:        relative;
+}
+
+.cmd-modal-pretitle {
+  font-family:    'Orbitron', sans-serif;
+  font-size:      9px;
+  font-weight:    600;
+  letter-spacing: 0.28em;
+  color:          var(--accent-amber);
+  text-transform: uppercase;
+  text-shadow:    0 0 14px rgba(255,170,0,0.35);
+  margin-bottom:  12px;
+}
+
+.cmd-modal-name {
+  font-family:    'Orbitron', sans-serif;
+  font-size:      17px;
+  font-weight:    900;
+  color:          var(--text-primary);
+  text-shadow:    0 0 22px rgba(0,212,255,0.2);
+  letter-spacing: 0.06em;
+  margin-bottom:  16px;
+  line-height:    1.25;
+}
+
+.cmd-modal-warning {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      9.5px;
+  font-weight:    600;
+  letter-spacing: 0.18em;
+  color:          var(--accent-red);
+  text-transform: uppercase;
+  opacity:        0.85;
+  margin-bottom:  24px;
+}
+
+.cmd-modal-footer {
+  display:         flex;
+  gap:             12px;
+  justify-content: center;
+}
+
+.cmd-modal-btn {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      11px;
+  font-weight:    600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor:         pointer;
+  border-radius:  3px;
+  padding:        10px 26px;
+  border:         1px solid;
+  background:     transparent;
+  transition:     box-shadow 0.18s ease,
+                  border-color 0.18s ease,
+                  transform 0.1s ease;
+}
+.cmd-modal-btn:active { transform: scale(0.97); }
+
+.cmd-modal-confirm {
+  background:   rgba(0,255,136,0.08);
+  border-color: rgba(0,255,136,0.44);
+  color:        var(--accent-green);
+}
+.cmd-modal-confirm:hover {
+  border-color: rgba(0,255,136,0.75);
+  box-shadow:   0 0 18px rgba(0,255,136,0.32);
+}
+
+.cmd-modal-cancel {
+  background:   rgba(255,59,59,0.08);
+  border-color: rgba(255,59,59,0.44);
+  color:        var(--accent-red);
+}
+.cmd-modal-cancel:hover {
+  border-color: rgba(255,59,59,0.75);
+  box-shadow:   0 0 18px rgba(255,59,59,0.32);
+}
+
+
+/* ================================================================
+   PHASE 8 — GPS TRACKING MAP
+   ================================================================ */
+
+#map-panel .panel-body {
+  padding:  0;
+  overflow: hidden;
+}
+
+#map-container {
+  flex:       1;
+  width:      100%;
+  height:     100%;
+  position:   relative;
+  min-height: 0;
+}
+
+/* ── Custom GPS marker (L.divIcon) ──────────────────────────── */
+.map-marker {
+  position: relative;
+  width:    16px;
+  height:   16px;
+}
+
+.map-marker-dot {
+  position:      absolute;
+  width:         10px;
+  height:        10px;
+  background:    #00d4ff;
+  border-radius: 50%;
+  top:           50%;
+  left:          50%;
+  transform:     translate(-50%, -50%);
+  box-shadow:    0 0 8px rgba(0,212,255,0.9), 0 0 18px rgba(0,212,255,0.4);
+}
+
+.map-marker-ring {
+  position:         absolute;
+  width:            16px;
+  height:           16px;
+  border:           2px solid rgba(0,212,255,0.70);
+  border-radius:    50%;
+  top:              0;
+  left:             0;
+  transform-origin: center;
+  animation:        marker-ring 1.4s ease-out infinite;
+}
+
+/* ── GPS info overlay (bottom-left of map) ──────────────────── */
+#map-info-overlay {
+  position:                absolute;
+  bottom:                  30px;
+  left:                    8px;
+  z-index:                 1000;
+  background:              rgba(1,10,20,0.82);
+  backdrop-filter:         blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border:                  1px solid rgba(0,212,255,0.2);
+  border-radius:           3px;
+  padding:                 6px 10px;
+  pointer-events:          none;
+}
+
+.map-info-row {
+  display:     flex;
+  align-items: baseline;
+  gap:         6px;
+  line-height: 1.55;
+}
+
+.map-info-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      7px;
+  font-weight:    600;
+  letter-spacing: 0.2em;
+  color:          var(--text-secondary);
+  opacity:        0.6;
+  text-transform: uppercase;
+  width:          22px;
+  flex-shrink:    0;
+}
+
+.map-info-value {
+  font-family: 'Share Tech Mono', monospace;
+  font-size:   10px;
+  color:       var(--text-mono);
+}
+
+/* ── Leaflet control / popup dark-theme overrides ───────────── */
+.leaflet-control-attribution {
+  background: rgba(1,10,20,0.65) !important;
+  color:      rgba(122,174,200,0.4) !important;
+  font-size:  7px !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgba(0,212,255,0.5) !important;
+}
+
+.leaflet-control-zoom a {
+  background:   rgba(5,18,35,0.88) !important;
+  border-color: rgba(0,212,255,0.25) !important;
+  color:        #7aaec8 !important;
+  line-height:  26px !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(0,212,255,0.1) !important;
+  color:      #00d4ff !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background:    rgba(5,18,35,0.96) !important;
+  border:        1px solid rgba(0,212,255,0.28) !important;
+  border-radius: 3px !important;
+  color:         var(--text-primary) !important;
+  box-shadow:    0 0 20px rgba(0,212,255,0.08) !important;
+}
+
+.leaflet-popup-tip-container .leaflet-popup-tip {
+  background: rgba(5,18,35,0.96) !important;
+}
+
+.map-popup-text {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      10px;
+  font-weight:    600;
+  letter-spacing: 0.12em;
+  color:          var(--accent-primary);
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+
+/* ================================================================
+   PHASE 9 — ORIENTATION VISUALIZATION
+   ================================================================ */
+
+#orientation-panel .panel-body {
+  padding: 8px;
+}
+
+#orientation-container {
+  flex:       1;
+  min-height: 0;
+  position:   relative;
+  border-radius: 3px;
+  overflow:   hidden;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Three.js appends a <canvas> — keep it block so it doesn't add line-height gap */
+#orientation-container canvas {
+  display: block;
+}
+
+/* ── RPY text readout strip ─────────────────────────────────── */
+#rpy-readout {
+  display:         flex;
+  justify-content: space-around;
+  align-items:     center;
+  flex-shrink:     0;
+  padding:         6px 4px 2px;
+  margin-top:      5px;
+  border-top:      1px solid rgba(0,212,255,0.1);
+}
+
+.rpy-item {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            2px;
+}
+
+.rpy-label {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      7px;
+  font-weight:    600;
+  letter-spacing: 0.22em;
+  color:          var(--text-secondary);
+  opacity:        0.6;
+  text-transform: uppercase;
+}
+
+.rpy-value {
+  font-family: 'Share Tech Mono', monospace;
+  font-size:   13px;
+  color:       var(--text-mono);
+  text-shadow: 0 0 7px rgba(0,212,255,0.35);
+  min-width:   56px;
+  text-align:  center;
+}
+
+
+/* ================================================================
+   PHASE 10 — LIVE VIDEO STREAM
+   ================================================================ */
+
+#video-panel .panel-body {
+  padding: 9px;
+  gap:     7px;
+}
+
+/* ── Stream status badge in panel header ────────────────────── */
+.stream-status {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      8.5px;
+  font-weight:    600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-left:    auto;
+  padding-right:  2px;
+  flex-shrink:    0;
+}
+
+.stream-status.live {
+  color:     var(--accent-red);
+  animation: vid-live-blink 1s ease-in-out infinite;
+}
+
+@keyframes vid-live-blink {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.3; }
+}
+
+.stream-status.offline {
+  color:   var(--text-secondary);
+  opacity: 0.5;
+}
+
+/* ── Controls row (select + start/stop) ─────────────────────── */
+.vid-controls {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  flex-shrink: 0;
+}
+
+.vid-select {
+  flex:           1;
+  min-width:      0;
+  font-family:    'Exo 2', sans-serif;
+  font-size:      9px;
+  font-weight:    400;
+  letter-spacing: 0.06em;
+  background:     rgba(0,212,255,0.04);
+  border:         1px solid rgba(0,212,255,0.22);
+  border-radius:  3px;
+  color:          var(--text-primary);
+  padding:        5px 6px;
+  cursor:         pointer;
+  outline:        none;
+  /* Style the dropdown arrow on Webkit */
+  -webkit-appearance: none;
+  appearance:     none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%2300d4ff' opacity='.5'/%3E%3C/svg%3E");
+  background-repeat:   no-repeat;
+  background-position: right 7px center;
+  padding-right:  22px;
+}
+
+.vid-select:focus {
+  border-color: rgba(0,212,255,0.55);
+  box-shadow:   0 0 8px rgba(0,212,255,0.14);
+}
+
+.vid-btn {
+  font-family:    'Exo 2', sans-serif;
+  font-size:      9px;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor:         pointer;
+  border-radius:  3px;
+  padding:        5px 9px;
+  border:         1px solid;
+  background:     transparent;
+  white-space:    nowrap;
+  flex-shrink:    0;
+  transition:     box-shadow 0.18s ease, border-color 0.18s ease, transform 0.1s ease;
+}
+.vid-btn:active              { transform: scale(0.97); }
+.vid-btn:disabled            { opacity: 0.28; cursor: not-allowed; }
+
+.vid-btn-start {
+  background:   rgba(0,255,136,0.06);
+  border-color: rgba(0,255,136,0.38);
+  color:        var(--accent-green);
+}
+.vid-btn-start:hover:not(:disabled) {
+  border-color: rgba(0,255,136,0.72);
+  box-shadow:   0 0 12px rgba(0,255,136,0.24);
+}
+
+.vid-btn-stop {
+  background:   rgba(255,59,59,0.06);
+  border-color: rgba(255,59,59,0.38);
+  color:        var(--accent-red);
+}
+.vid-btn-stop:hover:not(:disabled) {
+  border-color: rgba(255,59,59,0.72);
+  box-shadow:   0 0 12px rgba(255,59,59,0.24);
+}
+
+/* ── Live video element ─────────────────────────────────────── */
+#stream-video {
+  display:       block;
+  width:         100%;
+  flex:          1;
+  min-height:    0;
+  border-radius: 3px;
+  border:        1px solid rgba(0,212,255,0.25);
+  box-shadow:    0 0 14px rgba(0,212,255,0.09);
+  object-fit:    cover;
+  background:    #000;
+}
+
+/* ── Rocket cam demo video ──────────────────────────────────── */
+#rocket-cam-video {
+  display:       block;
+  width:         100%;
+  flex:          1;
+  min-height:    0;
+  border-radius: 3px;
+  border:        1px solid rgba(0,212,255,0.25);
+  box-shadow:    0 0 14px rgba(0,212,255,0.09);
+  object-fit:    cover;
+  background:    #000;
+}
+
+/* ── Placeholder ────────────────────────────────────────────── */
+.vid-placeholder {
+  flex:            1;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             8px;
+  border:          1px dashed rgba(0,212,255,0.12);
+  border-radius:   3px;
+  min-height:      0;
+}
+
+.vid-placeholder-icon {
+  font-size:  32px;
+  color:      rgba(0,212,255,0.22);
+  animation:  vid-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes vid-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.1); }
+}
+
+.vid-placeholder-text {
+  font-family:    'Orbitron', sans-serif;
+  font-size:      8.5px;
+  letter-spacing: 0.22em;
+  color:          rgba(0,212,255,0.2);
+  text-transform: uppercase;
+}
+
+/* ── Error panel ────────────────────────────────────────────── */
+.vid-error {
+  flex:            1;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-family:     'Share Tech Mono', monospace;
+  font-size:       10px;
+  letter-spacing:  0.12em;
+  color:           var(--accent-red);
+  text-align:      center;
+  border:          1px dashed rgba(255,59,59,0.2);
+  border-radius:   3px;
+  padding:         8px;
+  min-height:      0;
+}
+
+
+/* ================================================================
+   PHASE 11 — TOAST NOTIFICATION SYSTEM
+   ================================================================ */
+
+#toast-container {
+  position:       fixed;
+  bottom:         22px;
+  right:          22px;
+  z-index:        99999;
+  display:        flex;
+  flex-direction: column-reverse;
+  gap:            8px;
+  pointer-events: none;
+}
+
+.toast {
+  background:              rgba(5,18,35,0.96);
+  backdrop-filter:         blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border:                  1px solid rgba(0,212,255,0.18);
+  border-left-width:       3px;
+  border-radius:           4px;
+  padding:                 9px 16px;
+  font-family:             'Exo 2', sans-serif;
+  font-size:               10.5px;
+  font-weight:             600;
+  letter-spacing:          0.13em;
+  text-transform:          uppercase;
+  box-shadow:              0 4px 24px rgba(0,0,0,0.55);
+  transform:               translateX(120%);
+  opacity:                 0;
+  transition:              transform 0.28s ease, opacity 0.28s ease;
+  white-space:             nowrap;
+}
+
+.toast.toast-in {
+  transform: translateX(0);
+  opacity:   1;
+}
+
+.toast.toast-success {
+  color:            var(--accent-green);
+  border-color:     rgba(0,255,136,0.28);
+  border-left-color: var(--accent-green);
+}
+
+.toast.toast-warning {
+  color:            var(--accent-amber);
+  border-color:     rgba(255,170,0,0.28);
+  border-left-color: var(--accent-amber);
+}
+
+.toast.toast-error {
+  color:            var(--accent-red);
+  border-color:     rgba(255,59,59,0.28);
+  border-left-color: var(--accent-red);
+}
+
+
+/* ================================================================
+   RESPONSIVE — allow vertical scrolling on viewports < 900px.
+   The dashboard is designed for 1920×1080; at smaller sizes we
+   let the browser scroll rather than clip content.
+   ================================================================ */
+@media (max-width: 900px) {
+  html, body {
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+
+  body { overflow: auto; }
+
+  .dashboard-grid {
+    height:     auto;
+    min-height: 100vh;
+    /* Compress outer columns slightly so center column stays usable */
+    grid-template-columns: 220px 1fr 280px;
+    grid-template-rows:    auto auto minmax(340px, 1fr) minmax(340px, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  /* Single-column stacked layout for phones */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows:    auto auto;
+  }
+
+  #header {
+    height:    auto;
+    min-height: 56px;
+    padding:   8px 14px;
+    flex-wrap: wrap;
+    gap:       6px;
+  }
+
+  .header-center { order: 3; width: 100%; text-align: center; }
+
+  #control-bar {
+    height:    auto;
+    flex-wrap: wrap;
+    padding:   8px 12px;
+    gap:       6px;
+  }
+
+  .cb-time-group { margin-left: 0; }
+
+  #telemetry-panel,
+  #graphs-panel,
+  #mission-control-panel,
+  #map-panel,
+  #orientation-panel,
+  #video-panel {
+    grid-column: 1;
+    min-height:  320px;
+  }
+}
