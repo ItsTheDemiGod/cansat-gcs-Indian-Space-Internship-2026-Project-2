@@ -27,7 +27,8 @@
 ---
 
 ![Dashboard Preview](assets/preview.png)
-> *← Add a screenshot of your running dashboard here*
+<img width="1914" height="967" alt="image" src="https://github.com/user-attachments/assets/451d6dcb-6a48-4c7a-a890-9299c6dba94a" />
+
 
 </div>
 
