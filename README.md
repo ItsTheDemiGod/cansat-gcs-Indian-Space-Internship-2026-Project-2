@@ -125,7 +125,7 @@ cansat-gcs/
 │   └── README.md               # Hardware setup guide
 ├── arduino/
 │   └── cansat_telemetry.ino    # Arduino firmware for WeGyanik Kit
-└── CLAUDE.md                   # Development log
+
 ```
 
 ---
